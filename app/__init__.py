@@ -1,6 +1,10 @@
-from flask import Flask
+import logging
+import traceback
+from flask import Flask, jsonify
 from .config import ensure_folders
 from .database import init_db
+
+logger = logging.getLogger(__name__)
 
 
 def create_app():
@@ -19,5 +23,11 @@ def create_app():
     app.register_blueprint(predict_bp)
     app.register_blueprint(webcam_bp)
     app.register_blueprint(history_bp)
+
+    # ── Log every unhandled exception so Render shows it in logs ──────────────
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        logger.error("Unhandled exception:\n%s", traceback.format_exc())
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
     return app
