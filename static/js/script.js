@@ -147,9 +147,19 @@ analyzeBtn.addEventListener("click", async () => {
 
   try {
     const endpoint = "/predict";
-    const res = await fetch(endpoint, { method: "POST", body: formData });
-    const data = await res.json();
+    const res = await fetch(endpoint, {
+      method: "POST",
+      body: formData,
+    });
 
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("SERVER ERROR:", errorText);
+      alert(errorText);
+      return;
+    }
+
+    const data = await res.json();
     progressFill.style.width = "100%";
     progressLabel.textContent = "Done!";
     setTimeout(() => {
