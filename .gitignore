@@ -29,3 +29,5 @@ static/pdfs/
 # Videos
 videos_without_audio/
 
+# Allow deployment model
+!models/pothole_yolov8_best.pt
