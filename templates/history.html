@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>History — RAD·AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}"/>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fa-solid fa-road"></i></div>
+    <span class="logo-text">RAD<span class="accent">·</span>AI</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/" class="nav-item"><i class="fa-solid fa-upload"></i><span>Analyze</span></a>
+    <a href="/results" class="nav-item"><i class="fa-solid fa-chart-bar"></i><span>Results</span></a>
+    <a href="/results#alerts" class="nav-item"><i class="fa-solid fa-triangle-exclamation"></i><span>Alerts</span></a>
+    <a href="/live" class="nav-item"><i class="fa-solid fa-circle-dot"></i><span>Live</span></a>
+    <a href="/history" class="nav-item active"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="model-badge"><i class="fa-solid fa-microchip"></i><span>YOLOv8 Model</span></div>
+    <div class="model-badge" style="margin-top:6px"><i class="fa-solid fa-database"></i><span>SQLite History</span></div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent);margin-right:10px;"></i>Analysis History</h1>
+      <p>All past analyses stored persistently — never lost on refresh</p>
+    </div>
+    <div class="topbar-status">
+      <span class="status-dot active"></span>
+      <span id="db-count">Loading…</span>
+    </div>
+  </header>
+
+  <div class="hist-wrap">
+
+    <div class="stat-strip">
+      <div class="hstat" style="--hs-color:var(--accent)">
+        <div class="hs-label">Total Analyses</div>
+        <div class="hs-val" id="hs-total">—</div>
+        <div class="hs-sub">all time</div>
+      </div>
+      <div class="hstat" style="--hs-color:var(--danger)">
+        <div class="hs-label">Total Hazards</div>
+        <div class="hs-val" id="hs-hazards">—</div>
+        <div class="hs-sub">road damages + unsurfaced</div>
+      </div>
+      <div class="hstat" style="--hs-color:#5078DC">
+        <div class="hs-label">Total Objects</div>
+        <div class="hs-val" id="hs-objects">—</div>
+        <div class="hs-sub">detected across all runs</div>
+      </div>
+      <div class="hstat" style="--hs-color:var(--warning)">
+        <div class="hs-label">Critical Runs</div>
+        <div class="hs-val" id="hs-critical">—</div>
+        <div class="hs-sub">severity = critical</div>
+      </div>
+      <div class="hstat" style="--hs-color:var(--success)">
+        <div class="hs-label">Vehicles Seen</div>
+        <div class="hs-val" id="hs-vehicles">—</div>
+        <div class="hs-sub">HMV + LMV total</div>
+      </div>
+    </div>
+
+    <div class="trend-card">
+      <h4><i class="fa-solid fa-chart-line"></i> Last 7 Days Activity</h4>
+      <div class="trend-chart" id="trend-chart">
+        <div style="color:var(--text-muted);font-size:13px;margin:auto;">Loading…</div>
+      </div>
+      <div class="trend-legend">
+        <div class="tleg"><div class="tleg-dot" style="background:var(--accent)"></div> Analyses run</div>
+        <div class="tleg"><div class="tleg-dot" style="background:var(--danger)"></div> Hazards found</div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input class="filter-input" id="search-input" type="text"
+             placeholder="🔍  Search by filename…" oninput="debounceLoad()"/>
+      <select class="filter-select" id="sev-filter" onchange="loadHistory(1)">
+        <option value="">All severities</option>
+        <option value="critical">Critical</option>
+        <option value="moderate">Moderate</option>
+        <option value="low">Low</option>
+      </select>
+      <select class="filter-select" id="type-filter" onchange="loadHistory(1)">
+        <option value="">All types</option>
+        <option value="image">Image</option>
+        <option value="video">Video</option>
+        <option value="batch">Batch</option>
+      </select>
+      <span id="total-label"></span>
+    </div>
+
+    <div class="hist-grid" id="hist-grid"></div>
+    <div class="pagination" id="pagination"></div>
+
+  </div>
+</main>
+
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Analysis Detail</h3>
+      <button class="modal-close" onclick="closeModalDirect()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-body">Loading…</div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
+</body>
+</html>

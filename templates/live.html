@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Detection — RAD·AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/live.css') }}"/>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fa-solid fa-road"></i></div>
+    <span class="logo-text">RAD<span class="accent">·</span>AI</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/" class="nav-item"><i class="fa-solid fa-upload"></i><span>Analyze</span></a>
+    <a href="/results" class="nav-item"><i class="fa-solid fa-chart-bar"></i><span>Results</span></a>
+    <a href="/results#alerts" class="nav-item"><i class="fa-solid fa-triangle-exclamation"></i><span>Alerts</span></a>
+    <a href="/live" class="nav-item active"><i class="fa-solid fa-circle-dot"></i><span>Live</span></a>
+    <a href="/history" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="model-badge"><i class="fa-solid fa-microchip"></i><span>YOLOv8 + ByteTrack</span></div>
+    <div class="model-badge" style="margin-top:6px"><i class="fa-solid fa-database"></i><span>7,000+ Images</span></div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1><i class="fa-solid fa-circle-dot" style="color:var(--danger);margin-right:8px;font-size:14px;"></i>Live Road Detection</h1>
+      <p>Real-time webcam detection with ByteTrack object tracking</p>
+    </div>
+    <div class="topbar-status" id="topbar-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Camera Off</span>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="live-layout">
+
+      <div>
+        <div class="feed-card" id="feed-card">
+          <div class="feed-placeholder" id="feed-placeholder">
+            <i class="fa-solid fa-video-slash"></i>
+            <h3>Camera Inactive</h3>
+            <p>Click <strong>Start Camera</strong> to begin live road anomaly detection.</p>
+          </div>
+          <img id="live-feed" src="" alt="live feed"/>
+          <div class="live-badge" id="live-badge"><div class="blink"></div> LIVE</div>
+          <div class="fps-chip" id="fps-chip">-- FPS</div>
+        </div>
+
+        <div class="hazard-banner" id="hazard-banner">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="hazard-text">Road hazard detected in live feed</span>
+        </div>
+
+        <div class="info-strip">
+          <div class="info-tile">
+            <div class="it-label">Session Hazards Seen</div>
+            <div class="it-val" id="tile-hazards">0</div>
+            <div class="it-sub">road damages + unsurfaced</div>
+          </div>
+          <div class="info-tile">
+            <div class="it-label">Vehicles Spotted</div>
+            <div class="it-val" id="tile-vehicles">0</div>
+            <div class="it-sub">HMV + LMV combined</div>
+          </div>
+          <div class="info-tile">
+            <div class="it-label">Unique Track IDs</div>
+            <div class="it-val" id="tile-tracks">0</div>
+            <div class="it-sub">objects assigned by ByteTrack</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card controls-card">
+          <h4><i class="fa-solid fa-sliders"></i> Camera Controls</h4>
+          <div class="ctrl-btn-row">
+            <button class="btn btn-primary" id="start-btn" onclick="startCamera()">
+              <i class="fa-solid fa-play"></i> Start Camera
+            </button>
+            <button class="btn btn-outline" id="stop-btn" onclick="stopCamera()" disabled>
+              <i class="fa-solid fa-stop"></i> Stop
+            </button>
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+            Your browser will ask for webcam permission when you click Start.
+          </p>
+        </div>
+
+        <div class="card" style="padding:18px 20px;margin-top:16px;">
+          <h4 style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-chart-bar" style="color:var(--accent);"></i> Current Frame Counts
+          </h4>
+          <div class="live-stats" id="live-stats">
+            <div class="stat-row-live"><div class="slabel"><span class="dot" style="background:#DC5050"></span>HMV</div><div class="sval" id="ls-HMV">—</div></div>
+            <div class="stat-row-live"><div class="slabel"><span class="dot" style="background:#50B450"></span>LMV</div><div class="sval" id="ls-LMV">—</div></div>
+            <div class="stat-row-live"><div class="slabel"><span class="dot" style="background:#5078DC"></span>Pedestrian</div><div class="sval" id="ls-Pedestrian">—</div></div>
+            <div class="stat-row-live"><div class="slabel"><span class="dot" style="background:#DCB428"></span>Road Damages</div><div class="sval" id="ls-RoadDamages">—</div></div>
+            <div class="stat-row-live"><div class="slabel"><span class="dot" style="background:#B450DC"></span>Speed Bump</div><div class="sval" id="ls-SpeedBump">—</div></div>
+            <div class="stat-row-live"><div class="slabel"><span class="dot" style="background:#28C8C8"></span>Unsurfaced Rd</div><div class="sval" id="ls-UnsurfacedRoad">—</div></div>
+          </div>
+        </div>
+
+        <div class="card legend" style="margin-top:16px;">
+          <h5>Tracker colour legend</h5>
+          <div class="legend-grid">
+            <div class="legend-item"><span class="legend-dot" style="background:#DC5050"></span>Track ID colours rotate per object</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#50B450"></span>Same ID = same object across frames</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#DCB428"></span>Label shows class + ID + confidence</div>
+          </div>
+        </div>
+
+        <div class="card how-card" style="margin-top:16px;">
+          <h5>How live detection works</h5>
+          <ol class="how-steps">
+            <li>Flask streams MJPEG frames from your webcam</li>
+            <li>YOLOv8 detects objects on every frame</li>
+            <li>ByteTrack assigns a stable ID to each object</li>
+            <li>Bounding boxes follow objects as they move</li>
+            <li>HUD updates counts in real time</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast">
+  <i class="fa-solid fa-circle-check"></i>
+  <span id="toast-msg">Camera started</span>
+</div>
+
+<script src="{{ url_for('static', filename='js/live.js') }}"></script>
+</body>
+</html>

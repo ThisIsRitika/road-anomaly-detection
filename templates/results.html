@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Results — Road Anomaly Detection</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon"><i class="fa-solid fa-road"></i></div>
+        <span class="logo-text">RAD<span class="accent">·</span>AI</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item">
+          <i class="fa-solid fa-upload"></i><span>Analyze</span>
+        </a>
+        <a href="/results" class="nav-item active" id="nav-results">
+          <i class="fa-solid fa-chart-bar"></i><span>Results</span>
+        </a>
+        <a href="/results#alerts" class="nav-item" id="nav-alerts">
+          <i class="fa-solid fa-triangle-exclamation"></i><span>Alerts</span>
+        </a>
+        <a href="/live" class="nav-item">
+          <i class="fa-solid fa-circle-dot"></i><span>Live</span>
+        </a>
+        <a href="/history" class="nav-item">
+          <i class="fa-solid fa-clock-rotate-left"></i><span>History</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="model-badge">
+          <i class="fa-solid fa-microchip"></i>
+          <span>YOLOv8 Model</span>
+        </div>
+        <div class="model-badge" style="margin-top: 6px">
+          <i class="fa-solid fa-database"></i>
+          <span>7,000+ Images</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      {% if no_data %}
+      <!-- No data yet -->
+      <div class="no-data">
+        <i class="fa-solid fa-chart-bar"></i>
+        <h2>No Analysis Yet</h2>
+        <p>
+          Run an analysis on the main page first, then come back here to view
+          your results.
+        </p>
+        <a href="/" class="btn btn-primary" style="margin-top: 8px">
+          <i class="fa-solid fa-upload"></i> Go to Analyze
+        </a>
+      </div>
+
+      {% else %} {% set d = data %} {% set counts = d.counts %} {% set alerts =
+      d.alerts %} {% set total = counts.HMV + counts.LMV + counts.Pedestrian +
+      counts.RoadDamages + counts.SpeedBump + counts.UnsurfacedRoad %} {% set
+      hazards = counts.RoadDamages + counts.UnsurfacedRoad %} {% set vehicles =
+      counts.HMV + counts.LMV %} {% set severity = "critical" if hazards >= 3
+      else ("moderate" if hazards > 0 else "low") %} {% set sev_label =
+      "Critical" if hazards >= 3 else ("Moderate" if hazards > 0 else "Low") %}
+
+      <!-- Hero -->
+      <div class="results-hero">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+          "
+        >
+          <div>
+            <h1>
+              <i
+                class="fa-solid fa-chart-bar"
+                style="color: var(--accent); margin-right: 10px"
+              ></i
+              >Analysis Results
+            </h1>
+            <p>{{ d.timestamp }}</p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <span class="severity-badge {{ severity }}">
+              <i class="fa-solid fa-circle-dot"></i> {{ sev_label }} Severity
+            </span>
+            <a
+              href="/download-pdf/{{ d.pdf_id }}"
+              class="btn btn-primary btn-sm"
+              target="_blank"
+            >
+              <i class="fa-solid fa-file-pdf"></i> Download PDF
+            </a>
+            <a href="/" class="btn btn-outline btn-sm">
+              <i class="fa-solid fa-rotate-left"></i> New Analysis
+            </a>
+          </div>
+        </div>
+        <div class="hero-meta">
+          <div class="hero-chip">
+            <i class="fa-solid fa-file"></i> Type:
+            <span>{{ d.file_type | upper }}</span>
+          </div>
+          <div class="hero-chip">
+            <i class="fa-solid fa-cube"></i> Total Objects:
+            <span>{{ total }}</span>
+          </div>
+          <div class="hero-chip">
+            <i class="fa-solid fa-triangle-exclamation"></i> Hazards:
+            <span>{{ hazards }}</span>
+          </div>
+          <div class="hero-chip">
+            <i class="fa-solid fa-car"></i> Vehicles:
+            <span>{{ vehicles }}</span>
+          </div>
+          {% if d.file_type == "video" %}
+          <div class="hero-chip">
+            <i class="fa-solid fa-film"></i> Method:
+            <span>Peak per frame (40 samples)</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar" id="tab-bar">
+        <button class="tab active" data-tab="overview">
+          <i class="fa-solid fa-eye"></i> Overview
+        </button>
+        <button class="tab" data-tab="detections">
+          <i class="fa-solid fa-chart-bar"></i> Detections
+        </button>
+        <button class="tab" data-tab="alerts" id="tab-alerts-btn">
+          <i class="fa-solid fa-triangle-exclamation"></i> Alerts {% if alerts
+          %}
+          <span class="badge">{{ alerts | length }}</span>
+          {% endif %}
+        </button>
+      </div>
+
+      <!-- ── OVERVIEW TAB ── -->
+      <div class="tab-panel active" id="panel-overview">
+        <div class="section">
+          {% if d.file_type == "video" %}
+          <div class="video-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span
+              >Video mode: counts show the
+              <strong>peak detections in any single frame</strong> across {{ 40
+              }} sampled frames — not cumulative sums. This gives you a
+              realistic snapshot of the road scene.</span
+            >
+          </div>
+          {% endif %}
+
+          <!-- Summary stat cards -->
+          <div class="stat-row">
+            <div class="stat-card">
+              <div class="label">Total Detected</div>
+              <div class="value">{{ total }}</div>
+              <div class="sub">objects across all classes</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Road Hazards</div>
+              <div
+                class="value"
+                style="color:{% if hazards >= 3 %}var(--danger){% elif hazards > 0 %}var(--warning){% else %}var(--success){% endif %}"
+              >
+                {{ hazards }}
+              </div>
+              <div class="sub">damages + unsurfaced road</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Vehicles</div>
+              <div class="value">{{ vehicles }}</div>
+              <div class="sub">HMV + LMV combined</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Alerts Raised</div>
+              <div
+                class="value"
+                style="color:{% if alerts %}var(--warning){% else %}var(--success){% endif %}"
+              >
+                {{ alerts | length }}
+              </div>
+              <div class="sub">
+                {% if alerts %}action required{% else %}all clear{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Image compare -->
+          <div class="compare-grid">
+            <div class="card img-panel">
+              <div class="img-panel-label">Original</div>
+              {% if d.file_type == "video" %}
+              <video src="{{ d.original_url }}" controls></video>
+              {% else %}
+              <img src="{{ d.original_url }}" alt="original" />
+              {% endif %}
+            </div>
+            <div class="card img-panel">
+              <div class="img-panel-label">
+                {% if d.file_type == "video" %}Annotated Preview (sampled
+                frames){% else %}Detected{% endif %}
+              </div>
+              {% if d.file_type == "video" %} {% if d.thumb_url %}
+              <img src="{{ d.thumb_url }}" alt="best detection frame" />
+              <div
+                style="
+                  padding: 8px 14px;
+                  font-size: 11px;
+                  color: var(--text-muted);
+                "
+              >
+                <i class="fa-solid fa-circle-info"></i> Best detection frame
+                shown. Full annotated preview video also generated.
+              </div>
+              {% else %}
+              <video src="{{ d.result_url }}" controls></video>
+              {% endif %} {% else %}
+              <img src="{{ d.result_url }}" alt="result" />
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DETECTIONS TAB ── -->
+      <div class="tab-panel" id="panel-detections">
+        <div class="section">
+          <h3
+            style="
+              font-family: &quot;Syne&quot;, sans-serif;
+              font-size: 16px;
+              font-weight: 700;
+              margin-bottom: 20px;
+            "
+          >
+            <i
+              class="fa-solid fa-list"
+              style="color: var(--accent); margin-right: 8px"
+            ></i
+            >Object Detection Counts
+          </h3>
+          <div class="det-grid">
+            <div class="det-card" style="border-color: #dc5050">
+              <div class="det-icon" style="color: #dc5050">
+                <i class="fa-solid fa-truck"></i>
+              </div>
+              <div>
+                <div class="det-num">{{ counts.HMV }}</div>
+                <div class="det-label">Heavy Motor Vehicle (HMV)</div>
+              </div>
+            </div>
+            <div class="det-card" style="border-color: #50b450">
+              <div class="det-icon" style="color: #50b450">
+                <i class="fa-solid fa-car"></i>
+              </div>
+              <div>
+                <div class="det-num">{{ counts.LMV }}</div>
+                <div class="det-label">Light Motor Vehicle (LMV)</div>
+              </div>
+            </div>
+            <div class="det-card" style="border-color: #5078dc">
+              <div class="det-icon" style="color: #5078dc">
+                <i class="fa-solid fa-person-walking"></i>
+              </div>
+              <div>
+                <div class="det-num">{{ counts.Pedestrian }}</div>
+                <div class="det-label">Pedestrian</div>
+              </div>
+            </div>
+            <div class="det-card" style="border-color: #dcb428">
+              <div class="det-icon" style="color: #dcb428">
+                <i class="fa-solid fa-circle-exclamation"></i>
+              </div>
+              <div>
+                <div class="det-num">{{ counts.RoadDamages }}</div>
+                <div class="det-label">Road Damages / Potholes</div>
+              </div>
+            </div>
+            <div class="det-card" style="border-color: #b450dc">
+              <div class="det-icon" style="color: #b450dc">
+                <i class="fa-solid fa-road-barrier"></i>
+              </div>
+              <div>
+                <div class="det-num">{{ counts.SpeedBump }}</div>
+                <div class="det-label">Speed Bump</div>
+              </div>
+            </div>
+            <div class="det-card" style="border-color: #28c8c8">
+              <div class="det-icon" style="color: #28c8c8">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div>
+                <div class="det-num">{{ counts.UnsurfacedRoad }}</div>
+                <div class="det-label">Unsurfaced Road</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- bar chart -->
+          <div class="card" style="padding: 24px; margin-top: 24px">
+            <h4
+              style="
+                font-family: &quot;Syne&quot;, sans-serif;
+                font-size: 14px;
+                font-weight: 700;
+                margin-bottom: 18px;
+                color: var(--text);
+              "
+            >
+              <i
+                class="fa-solid fa-chart-bar"
+                style="color: var(--accent); margin-right: 8px"
+              ></i
+              >Visual Breakdown
+            </h4>
+            {% set max_val = [counts.HMV, counts.LMV, counts.Pedestrian,
+            counts.RoadDamages, counts.SpeedBump, counts.UnsurfacedRoad] | max
+            %} {% set max_val = max_val if max_val > 0 else 1 %} {% set bars = [
+            ("HMV", counts.HMV, "#DC5050", "truck"), ("LMV", counts.LMV,
+            "#50B450", "car"), ("Pedestrian", counts.Pedestrian, "#5078DC",
+            "person-walking"), ("Road Damages", counts.RoadDamages, "#DCB428",
+            "circle-exclamation"), ("Speed Bump", counts.SpeedBump, "#B450DC",
+            "road-barrier"), ("Unsurfaced Rd", counts.UnsurfacedRoad,"#28C8C8",
+            "triangle-exclamation"), ] %} {% for label, val, color, icon in bars
+            %}
+            <div style="margin-bottom: 14px">
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-bottom: 6px;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    color: var(--text-muted);
+                  "
+                >
+                  <i
+                    class="fa-solid fa-{{ icon }}"
+                    style="color:{{ color }};width:16px;text-align:center;"
+                  ></i>
+                  {{ label }}
+                </div>
+                <span
+                  style="
+                    font-family: &quot;Syne&quot;, sans-serif;
+                    font-weight: 700;
+                    font-size: 14px;
+                    color: var(--text);
+                  "
+                  >{{ val }}</span
+                >
+              </div>
+              <div
+                style="
+                  height: 8px;
+                  background: var(--surface2);
+                  border-radius: 99px;
+                  overflow: hidden;
+                "
+              >
+                <div
+                  style="height:100%;width:{{ (val / max_val * 100) | round | int }}%;background:{{ color }};border-radius:99px;transition:width 0.6s ease;"
+                ></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ALERTS TAB ── -->
+      <div class="tab-panel" id="panel-alerts">
+        <div class="section" id="alerts-anchor">
+          <h3
+            style="
+              font-family: &quot;Syne&quot;, sans-serif;
+              font-size: 16px;
+              font-weight: 700;
+              margin-bottom: 20px;
+            "
+          >
+            <i
+              class="fa-solid fa-triangle-exclamation"
+              style="color: var(--accent); margin-right: 8px"
+            ></i
+            >Alerts &amp; Recommendations
+          </h3>
+
+          {% set level_titles = { "critical": "⚠ Critical Hazard Detected",
+          "warning": "🔶 Warning", "safe": "✅ Road Conditions Safe" } %} {% if
+          alerts %} {% for alert in alerts %}
+          <div class="alert-item {{ alert.level }}">
+            <div class="alert-icon">{{ alert.icon }}</div>
+            <div>
+              <div class="alert-title">{{ level_titles[alert.level] }}</div>
+              <div class="alert-msg">{{ alert.message }}</div>
+            </div>
+          </div>
+          {% endfor %} {% else %}
+          <div class="alert-item safe">
+            <div class="alert-icon">✅</div>
+            <div>
+              <div class="alert-title">All Clear</div>
+              <div class="alert-msg">
+                No hazards or alerts were generated for this analysis.
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% endif %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/results.js') }}"></script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# Dataset
+images/train/
+images/valid/
+images/test/
+images/train_combined/
+
+# YOLO outputs
+runs/
+
+# Weights
+*.pt
+*.pth
+
+# Generated content
+static/uploads/
+static/outputs/
+static/pdfs/
+
+# DB
+*.db
+
+# Videos
+videos_without_audio/

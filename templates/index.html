@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Road Anomaly Detection — AI Road Safety System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}"/>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fa-solid fa-road"></i></div>
+    <span class="logo-text">RAD<span class="accent">·</span>AI</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/" class="nav-item active"><i class="fa-solid fa-upload"></i><span>Analyze</span></a>
+    <a href="/results" class="nav-item"><i class="fa-solid fa-chart-bar"></i><span>Results</span></a>
+    <a href="/results#alerts" class="nav-item"><i class="fa-solid fa-triangle-exclamation"></i><span>Alerts</span></a>
+    <a href="/live" class="nav-item"><i class="fa-solid fa-circle-dot"></i><span>Live</span></a>
+    <a href="/history" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="model-badge"><i class="fa-solid fa-microchip"></i><span>YOLOv8 Model</span></div>
+    <div class="model-badge" style="margin-top:6px"><i class="fa-solid fa-database"></i><span>7,000+ Images</span></div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1>Road Anomaly Detection</h1>
+      <p>AI-powered road safety analysis for images &amp; videos</p>
+    </div>
+    <div class="topbar-status">
+      <span class="status-dot active"></span>
+      <span>Model Ready</span>
+    </div>
+  </header>
+
+  <section class="section" id="section-upload">
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-single" onclick="switchMode('single')">
+        <i class="fa-solid fa-file-image"></i> Single File
+      </button>
+      <button class="mode-btn" id="mode-batch" onclick="switchMode('batch')">
+        <i class="fa-solid fa-layer-group"></i> Batch Upload
+      </button>
+    </div>
+
+    <!-- SINGLE FILE PANEL -->
+    <div id="single-panel">
+      <div class="upload-grid">
+        <div class="card upload-card" id="drop-zone">
+          <input type="file" id="file-input" hidden accept="image/*,video/*"/>
+          <div class="upload-inner" id="upload-inner">
+            <div class="upload-icon-wrap">
+              <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+            </div>
+            <h3>Drop your file here</h3>
+            <p>Supports <strong>JPG, PNG, MP4, MOV, AVI</strong></p>
+            <button class="btn btn-outline" id="browse-btn">
+              <i class="fa-solid fa-folder-open"></i> Browse File
+            </button>
+          </div>
+          <div class="preview-wrap" id="preview-wrap" style="display:none">
+            <img id="img-preview" src="" alt="preview"/>
+            <video id="vid-preview" src="" controls style="display:none"></video>
+            <div class="preview-label" id="preview-label"></div>
+            <button class="btn btn-ghost btn-sm clear-btn" id="clear-btn">
+              <i class="fa-solid fa-xmark"></i> Change file
+            </button>
+          </div>
+        </div>
+
+        <div class="info-sidebar">
+          <div class="card info-card">
+            <h4><i class="fa-solid fa-list-check"></i> Detectable Classes</h4>
+            <div class="class-list">
+              <div class="class-item"><span class="dot" style="background:#DC5050"></span>Heavy Motor Vehicle (HMV)</div>
+              <div class="class-item"><span class="dot" style="background:#50B450"></span>Light Motor Vehicle (LMV)</div>
+              <div class="class-item"><span class="dot" style="background:#5078DC"></span>Pedestrian</div>
+              <div class="class-item"><span class="dot" style="background:#DCB428"></span>Road Damages / Potholes</div>
+              <div class="class-item"><span class="dot" style="background:#B450DC"></span>Speed Bump</div>
+              <div class="class-item"><span class="dot" style="background:#28C8C8"></span>Unsurfaced Road</div>
+            </div>
+          </div>
+          <div class="card info-card">
+            <h4><i class="fa-solid fa-circle-info"></i> How it works</h4>
+            <ol class="how-list">
+              <li>Upload an image or video file</li>
+              <li>YOLOv8 runs detection with confidence scores</li>
+              <li>View bounding boxes, counts &amp; confidence</li>
+              <li>Download a full PDF report</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-primary btn-lg" id="analyze-btn" disabled>
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <span id="analyze-btn-text">Analyze</span>
+        </button>
+        <p id="status-msg" class="status-msg"></p>
+      </div>
+
+      <div class="progress-wrap" id="progress-wrap" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <p id="progress-label">Processing...</p>
+      </div>
+
+      <div class="results-cta" id="results-cta" style="display:none">
+        <div class="cta-text">
+          <h4><i class="fa-solid fa-check-circle" style="color:var(--success);margin-right:6px;"></i>Analysis Complete!</h4>
+          <p>View your full results, detection breakdown &amp; alerts on the Results page.</p>
+        </div>
+        <div class="cta-btns">
+          <a href="/results" class="btn btn-primary" id="view-results-btn"><i class="fa-solid fa-chart-bar"></i> View Results</a>
+          <a href="/results#alerts" class="btn btn-outline" id="view-alerts-btn"><i class="fa-solid fa-triangle-exclamation"></i> View Alerts</a>
+          <button class="btn btn-ghost btn-sm" id="download-pdf-btn"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BATCH PANEL -->
+    <div id="batch-panel">
+      <div class="upload-grid">
+        <div>
+          <div class="batch-drop card" id="batch-drop">
+            <input type="file" id="batch-input" hidden accept="image/*" multiple/>
+            <i class="fa-solid fa-images"></i>
+            <h3>Drop multiple images here</h3>
+            <p>Supports <strong>JPG, PNG, BMP, WEBP</strong> — select as many as you need</p>
+            <button class="btn btn-outline" id="batch-browse-btn">
+              <i class="fa-solid fa-folder-open"></i> Browse Files
+            </button>
+          </div>
+          <div class="batch-queue" id="batch-queue"></div>
+          <div class="action-row" style="margin-top:16px;">
+            <button class="btn btn-primary btn-lg" id="batch-analyze-btn" disabled>
+              <i class="fa-solid fa-layer-group"></i>
+              <span id="batch-btn-text">Analyze All</span>
+            </button>
+            <button class="btn btn-ghost" id="batch-clear-btn" style="display:none">
+              <i class="fa-solid fa-trash"></i> Clear
+            </button>
+            <p id="batch-status" class="status-msg"></p>
+          </div>
+          <div class="progress-wrap" id="batch-progress-wrap" style="display:none">
+            <div class="progress-bar"><div class="progress-fill" id="batch-progress-fill"></div></div>
+            <p id="batch-progress-label">Processing batch…</p>
+          </div>
+        </div>
+
+        <div class="info-sidebar">
+          <div class="card info-card">
+            <h4><i class="fa-solid fa-layer-group"></i> Batch Mode</h4>
+            <ol class="how-list">
+              <li>Select multiple images at once</li>
+              <li>All files processed in one request</li>
+              <li>Get counts &amp; confidence per file</li>
+              <li>Download ZIP of all annotated images</li>
+              <li>Consolidated PDF report included</li>
+            </ol>
+          </div>
+          <div class="card info-card">
+            <h4><i class="fa-solid fa-circle-info"></i> Tips</h4>
+            <ol class="how-list">
+              <li>Images only (no videos in batch mode)</li>
+              <li>Max ~20 files recommended per batch</li>
+              <li>Each file is independently analyzed</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="batch-summary" id="batch-summary">
+        <div class="batch-summary-header">
+          <h3><i class="fa-solid fa-check-circle" style="color:var(--success);margin-right:8px;"></i>Batch Complete</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" id="batch-download-zip-btn"><i class="fa-solid fa-file-zipper"></i> Download ZIP</button>
+            <button class="btn btn-ghost btn-sm" id="batch-download-pdf-btn"><i class="fa-solid fa-file-pdf"></i> Consolidated PDF</button>
+          </div>
+        </div>
+        <div class="batch-stat-strip">
+          <div class="bstat"><div class="blabel">Files Processed</div><div class="bval" id="bstat-files">0</div></div>
+          <div class="bstat"><div class="blabel">Total Objects</div><div class="bval" id="bstat-objects">0</div></div>
+          <div class="bstat"><div class="blabel">Total Hazards</div><div class="bval" id="bstat-hazards" style="color:var(--danger)">0</div></div>
+          <div class="bstat"><div class="blabel">Alerts Raised</div><div class="bval" id="bstat-alerts" style="color:var(--warning)">0</div></div>
+        </div>
+        <div class="file-results-list" id="file-results-list"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="section results-section" id="section-results" style="display:none">
+    <div class="section-header">
+      <h2><i class="fa-solid fa-eye"></i> Quick Preview</h2>
+      <div class="result-actions">
+        <a href="/results" class="btn btn-primary btn-sm"><i class="fa-solid fa-chart-bar"></i> Full Results Page</a>
+        <button class="btn btn-ghost btn-sm" id="reset-btn"><i class="fa-solid fa-rotate-left"></i> New Analysis</button>
+      </div>
+    </div>
+    <div class="image-compare-grid">
+      <div class="card image-card">
+        <div class="image-card-label">Original</div>
+        <img id="original-result-img" src="" alt="original"/>
+        <video id="original-result-vid" src="" controls style="display:none"></video>
+      </div>
+      <div class="card image-card">
+        <div class="image-card-label">Detected (with confidence %)</div>
+        <img id="result-img" src="" alt="result"/>
+        <video id="result-vid" src="" controls style="display:none"></video>
+      </div>
+    </div>
+    <div class="counts-section" style="margin-top:24px;">
+      <h3>Object Counts</h3>
+      <div class="counts-grid">
+        <div class="count-card" style="--accent:#DC5050"><div class="count-icon"><i class="fa-solid fa-truck"></i></div><div class="count-info"><div class="count-num" id="cnt-HMV">0</div><div class="count-label">HMV</div></div></div>
+        <div class="count-card" style="--accent:#50B450"><div class="count-icon"><i class="fa-solid fa-car"></i></div><div class="count-info"><div class="count-num" id="cnt-LMV">0</div><div class="count-label">LMV</div></div></div>
+        <div class="count-card" style="--accent:#5078DC"><div class="count-icon"><i class="fa-solid fa-person-walking"></i></div><div class="count-info"><div class="count-num" id="cnt-Pedestrian">0</div><div class="count-label">Pedestrian</div></div></div>
+        <div class="count-card" style="--accent:#DCB428"><div class="count-icon"><i class="fa-solid fa-circle-exclamation"></i></div><div class="count-info"><div class="count-num" id="cnt-RoadDamages">0</div><div class="count-label">Road Damages</div></div></div>
+        <div class="count-card" style="--accent:#B450DC"><div class="count-icon"><i class="fa-solid fa-road-barrier"></i></div><div class="count-info"><div class="count-num" id="cnt-SpeedBump">0</div><div class="count-label">Speed Bump</div></div></div>
+        <div class="count-card" style="--accent:#28C8C8"><div class="count-icon"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="count-info"><div class="count-num" id="cnt-UnsurfacedRoad">0</div><div class="count-label">Unsurfaced Road</div></div></div>
+      </div>
+    </div>
+    <div class="conf-section" id="conf-section" style="display:none">
+      <h4><i class="fa-solid fa-gauge-high"></i> Detection Confidence Scores</h4>
+      <div id="conf-rows"></div>
+    </div>
+  </section>
+
+  <section class="section alerts-section" id="section-alerts" style="display:none">
+    <div class="section-header">
+      <h2><i class="fa-solid fa-triangle-exclamation"></i> Alerts &amp; Recommendations</h2>
+    </div>
+    <div id="alerts-container" class="alerts-container"></div>
+  </section>
+</main>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/index_extra.js') }}"></script>
+</body>
+</html>
