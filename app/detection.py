@@ -52,7 +52,7 @@ def _draw_box(img, x1, y1, x2, y2, color, text):
 # ── Image ─────────────────────────────────────────────────────────────────────
 
 def process_image(filepath):
-    results  = yolo(filepath, conf=CONF_THRESHOLD)[0]
+    results  = yolo(filepath, conf=CONF_THRESHOLD, imgsz=416)[0]
     img      = cv2.imread(filepath)
     counts   = {k: 0  for k in CLASS_COLORS}
     conf_map = {k: [] for k in CLASS_COLORS}
@@ -90,7 +90,7 @@ def process_video(filepath, output_path, uid):
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
         ret, frame = cap.read()
         if not ret: continue
-        results = yolo(frame, verbose=False, conf=CONF_THRESHOLD)[0]
+        results = yolo(frame, verbose=False, conf=CONF_THRESHOLD, imgsz=416)[0]
         fc = {k:0 for k in CLASS_COLORS}
         for box in results.boxes:
             cls_id   = int(box.cls[0])
@@ -137,7 +137,7 @@ def process_video_tracked(filepath, output_path, uid):
         ret, frame = cap.read()
         if not ret: continue
         results = yolo.track(frame, persist=True, verbose=False,
-                             conf=CONF_THRESHOLD, tracker="bytetrack.yaml")[0]
+                             conf=CONF_THRESHOLD, tracker="bytetrack.yaml", imgsz=416)[0]
         fc = {k:0 for k in CLASS_COLORS}
         if results.boxes is not None:
             for box in results.boxes:
@@ -180,7 +180,7 @@ def webcam_frame_generator(active_ref, counts_ref=None):
         ret, frame = cap.read()
         if not ret: break
         results = yolo.track(frame, persist=True, verbose=False,
-                             conf=CONF_THRESHOLD, tracker="bytetrack.yaml")[0]
+                             conf=CONF_THRESHOLD, tracker="bytetrack.yaml", imgsz=416)[0]
         fc = {k:0 for k in CLASS_COLORS}; hz = 0
         if results.boxes is not None:
             for box in results.boxes:

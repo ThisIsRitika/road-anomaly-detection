@@ -28,7 +28,7 @@ DB_PATH    = "/tmp/rad_history.db" if IS_PROD else os.path.join(BASE_DIR, "rad_h
 MODEL_PATH = os.path.join(BASE_DIR, "models", "pothole_yolov8_best.pt")
 
 # ── Detection settings ────────────────────────────────────────────────────────
-MAX_SAMPLE_FRAMES = 40
+MAX_SAMPLE_FRAMES = 10
 CONF_THRESHOLD    = 0.35
 
 CLASS_COLORS = {
