@@ -18,10 +18,15 @@ runs/
 *.pt
 *.pth
 
-# Generated content
-static/uploads/
-static/outputs/
-static/pdfs/
+# Ignore generated files
+static/uploads/*
+static/outputs/*
+static/pdfs/*
+
+# Keep folders
+!static/uploads/.gitkeep
+!static/outputs/.gitkeep
+!static/pdfs/.gitkeep
 
 # DB
 *.db
