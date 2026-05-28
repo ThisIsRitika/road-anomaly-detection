@@ -1,6 +1,6 @@
 import os
 from flask import Blueprint, render_template, session, send_file
-from ..config import PDF_FOLDER, BATCH_FOLDER
+from ..config import IS_PROD, PDF_FOLDER, BATCH_FOLDER
 
 main_bp = Blueprint("main", __name__)
 
@@ -44,3 +44,24 @@ def download_batch_zip(batch_uid):
         return "ZIP not found", 404
     return send_file(zip_path, as_attachment=True,
                      download_name=f"rad_batch_{batch_uid}.zip")
+
+
+# ── Production-only: serve uploaded/output files from /tmp ───────────────────
+# On Render, files are written to /tmp/rad/... which Flask's static handler
+# can't reach. This route proxies them so <img src="/files/outputs/x.jpg">
+# works in both local and production environments.
+@main_bp.route("/files/<path:filename>")
+def serve_file(filename):
+    if IS_PROD:
+        full_path = os.path.join("/tmp/rad", filename)
+    else:
+        # Locally this route is never used (Flask serves static/ directly),
+        # but keep it functional for local testing with IS_PROD=True.
+        import app
+        full_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "static", filename
+        )
+    if not os.path.exists(full_path):
+        return "File not found", 404
+    return send_file(full_path)
