@@ -28,3 +28,6 @@ static/pdfs/
 
 # Videos
 videos_without_audio/
+
+#models
+models/*.pt

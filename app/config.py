@@ -10,7 +10,7 @@ FRAMES_FOLDER = os.path.join(BASE_DIR, "static", "frames")
 BATCH_FOLDER  = os.path.join(BASE_DIR, "static", "batch")
 
 DB_PATH       = os.path.join(BASE_DIR, "rad_history.db")
-MODEL_PATH    = os.path.join(BASE_DIR, "runs", "detect", "road_model", "weights", "best.pt")
+MODEL_PATH    = os.path.join(BASE_DIR, "models", "pothole_yolov8_best.pt")
 
 MAX_SAMPLE_FRAMES = 40
 CONF_THRESHOLD    = 0.35
